@@ -13,7 +13,9 @@ def getUrl(url):
     return requests.utils.unquote(url[s:e])
 
 
-def parse(url):    
+def parse(url, lvl):
+    if lvl == 0:
+        return []
     res = requests.get(url, proxies=proxies)
     all_refs = []
     soup = BeautifulSoup(res.text, "html.parser")
@@ -25,8 +27,11 @@ def parse(url):
     for parent in all_refs:
         for child in parent.contents:
             if child.name == "h3":
-                clear_refs.append(getUrl(parent["href"]))   
-    return clear_refs
+                clear_refs.append(getUrl(parent["href"]))
+    tmp = []
+    for ref in clear_refs:
+        tmp.append(parse(ref, lvl - 1))
+    return clear_refs + tmp
 
 
 def main():
@@ -40,7 +45,7 @@ def main():
             for num_page in range(start, end, 10):
                 url = 'http://www.google.com/search?q=' + \
                     word + '&ie=UTF-8&start=' + str(num_page)
-                clear_refs = parse(url)
+                clear_refs = parse(url, 3)
                 with open(file_name_w, "a") as file:
                     for line in clear_refs:
                         file.write(line + '\n')
