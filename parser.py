@@ -13,6 +13,10 @@ def getUrl(url):
     return requests.utils.unquote(url[s:e])
 
 
+def getRef(ref):
+    return ref.replace('https', 'http')
+
+
 def makeUrl(url1, url2):
     t = 0
     s = 0
@@ -27,7 +31,7 @@ def makeUrl(url1, url2):
 
 def parse_other(url):
     try:
-        res = requests.get(url, proxies=proxies)
+        res = requests.get(getRef(url), proxies=proxies)
         all_refs = []
         soup = BeautifulSoup(res.text, "html.parser")
         all_refs = soup.findAll(
@@ -51,7 +55,7 @@ def parse_other(url):
 
 
 def parse_google(url):
-    res = requests.get(url, proxies=proxies)
+    res = requests.get(getRef(url), proxies=proxies)
     all_refs = []
     soup = BeautifulSoup(res.text, "html.parser")
     all_refs = soup.findAll(
@@ -70,21 +74,22 @@ def parse_google(url):
 
 
 def parse_deep(url, lvl):
-    url = url.replace('https', 'http')
+    root_ref = re.search('.*\..+/', url)[0]
+    exception = parse_other(root_ref)
+
+
+def deep(url, lvl, exception):
     if lvl == 0:
         return []
     refs = parse_other(url)
     tmp = []
     for ref in refs:
-        ref = ref.replace('https', 'http')
-        if ref == url:
-            continue
-        tmp += parse_deep(ref, lvl - 1)
+        tmp += deep(ref, lvl - 1)
     return refs + tmp
 
 
 def main():
-    t = parse_deep('https://www.ebay.com/', 2)
+    t = parse_deep('https://www.ebay.com/bgfb', 2)
     file_name_r = ["dict.txt", "words.txt"]
     file_name_w = "refs.txt"
     start = 0
